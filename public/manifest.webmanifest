@@ -1,0 +1,9 @@
+{
+  "name": "Liconex",
+  "short_name": "Liconex",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#07110f",
+  "theme_color": "#07110f",
+  "icons": []
+}
