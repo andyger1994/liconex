@@ -1,7 +1,7 @@
 import type { Profile } from "@/lib/types";
 
 export function isDemoMode() {
-  return process.env.NEXT_PUBLIC_DEMO_MODE === "true";
+  return process.env.NEXT_PUBLIC_DEMO_MODE !== "false" || !process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL.includes("demo.supabase.co");
 }
 
 export const demoProfile: Profile = {
