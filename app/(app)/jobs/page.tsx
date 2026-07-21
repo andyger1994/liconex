@@ -2,18 +2,16 @@ import Link from "next/link";
 import { MapPin, Timer, TrendingUp } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { demoClients, demoJobs, isDemoMode } from "@/lib/demo";
 import { PageTitle } from "@/components/shell";
 import { JobForm } from "@/components/forms";
 import { money, minutesToHours } from "@/lib/utils";
 
 export default async function JobsPage({ searchParams }: { searchParams: { new?: string } }) {
   const { profile } = await requireUser();
-  const demo = isDemoMode();
-  const supabase = demo ? undefined : await createClient();
-  const [{ data: jobs }, { data: clients }] = demo ? [{ data: demoJobs }, { data: demoClients }] : await Promise.all([
-    supabase!.from("jobs").select("id, code, name, status, priority, address, agreed_price, estimated_cost, real_cost, estimated_minutes, real_minutes, clients(name)").order("created_at", { ascending: false }).limit(25),
-    supabase!.from("clients").select("id, name").order("name")
+  const supabase = await createClient();
+  const [{ data: jobs }, { data: clients }] = await Promise.all([
+    supabase.from("jobs").select("id, code, name, status, priority, address, agreed_price, estimated_cost, real_cost, estimated_minutes, real_minutes, clients(name)").order("created_at", { ascending: false }).limit(25),
+    supabase.from("clients").select("id, name").order("name")
   ]);
   const jobRows = (jobs ?? []) as any[];
 

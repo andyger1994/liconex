@@ -1,15 +1,13 @@
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { demoEmployees, isDemoMode } from "@/lib/demo";
 import { PageTitle, StatCard } from "@/components/shell";
 import { EmployeeForm } from "@/components/forms";
 import { money } from "@/lib/utils";
 
 export default async function EmployeesPage({ searchParams }: { searchParams: { new?: string } }) {
   await requireRole(["admin"]);
-  const demo = isDemoMode();
-  const supabase = demo ? undefined : await createClient();
-  const { data: employees } = demo ? { data: demoEmployees } : await supabase!.from("employees").select("id, full_name, role, position, specialty, hourly_rate, overtime_rate, is_active").order("full_name");
+  const supabase = await createClient();
+  const { data: employees } = await supabase.from("employees").select("id, full_name, role, position, specialty, hourly_rate, overtime_rate, is_active").order("full_name");
 
   return (
     <div>

@@ -2,13 +2,6 @@
 import { createServerClient } from "@supabase/ssr";
 
 export async function proxy(request: NextRequest) {
-  if (process.env.NEXT_PUBLIC_DEMO_MODE === "true") {
-    if (request.nextUrl.pathname === "/") {
-      return NextResponse.redirect(new URL("/dashboard", request.url));
-    }
-    return NextResponse.next();
-  }
-
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(

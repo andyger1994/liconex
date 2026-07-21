@@ -3,7 +3,6 @@ import type { LucideIcon } from "lucide-react";
 import { AlertTriangle, Banknote, BriefcaseBusiness, Clock3, Plus, ReceiptText, UserPlus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/auth";
-import { demoExpenses, demoJobs, demoPayments, demoWorkSessions, isDemoMode } from "@/lib/demo";
 import { Button } from "@/components/ui/button";
 import { PageTitle, StatCard } from "@/components/shell";
 import { finishWorkSession, startWorkSession } from "@/lib/actions/crud";
@@ -12,19 +11,13 @@ import { minutesToHours, money, todayISO } from "@/lib/utils";
 export default async function DashboardPage() {
   const { profile } = await requireUser();
   const today = todayISO();
-  const demo = isDemoMode();
-  const supabase = demo ? undefined : await createClient();
+  const supabase = await createClient();
 
-  const [jobs, expenses, payments, sessions] = demo ? [
-    { data: demoJobs },
-    { data: demoExpenses.filter((row) => row.spent_at.startsWith(today)) },
-    { data: demoPayments.filter((row) => row.paid_at.startsWith(today)) },
-    { data: demoWorkSessions.filter((row) => row.started_at.startsWith(today)) }
-  ] : await Promise.all([
-    supabase!.from("jobs").select("id, name, status, scheduled_date, address").order("scheduled_date", { ascending: true }).limit(8),
-    supabase!.from("expenses").select("amount, currency, spent_at").gte("spent_at", today),
-    supabase!.from("payments").select("amount, currency, paid_at").gte("paid_at", today),
-    supabase!.from("work_sessions").select("id, started_at, ended_at, total_minutes, job_id").eq("user_id", profile?.id).gte("started_at", today).order("started_at", { ascending: false })
+  const [jobs, expenses, payments, sessions] = await Promise.all([
+    supabase.from("jobs").select("id, name, status, scheduled_date, address").order("scheduled_date", { ascending: true }).limit(8),
+    supabase.from("expenses").select("amount, currency, spent_at").gte("spent_at", today),
+    supabase.from("payments").select("amount, currency, paid_at").gte("paid_at", today),
+    supabase.from("work_sessions").select("id, started_at, ended_at, total_minutes, job_id").eq("user_id", profile?.id).gte("started_at", today).order("started_at", { ascending: false })
   ]);
 
   const activeSession = sessions.data?.find((row) => !row.ended_at);

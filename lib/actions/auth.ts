@@ -2,14 +2,9 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { isDemoMode } from "@/lib/demo";
 import { createClient } from "@/lib/supabase/server";
 
 export async function signIn(_: unknown, formData: FormData) {
-  if (isDemoMode()) {
-    redirect("/dashboard");
-  }
-
   const supabase = await createClient();
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
@@ -22,10 +17,6 @@ export async function signIn(_: unknown, formData: FormData) {
 }
 
 export async function signOut() {
-  if (isDemoMode()) {
-    redirect("/login");
-  }
-
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
@@ -40,10 +31,6 @@ export async function requestPasswordResetDirect(formData: FormData) {
 }
 
 async function sendPasswordReset(formData: FormData) {
-  if (isDemoMode()) {
-    return { success: "Modo demo activo: no hace falta recuperar contrasena." };
-  }
-
   const supabase = await createClient();
   const email = String(formData.get("email") ?? "");
   const redirectTo = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password`;

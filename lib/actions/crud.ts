@@ -3,7 +3,6 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole, requireUser } from "@/lib/auth";
-import { isDemoMode } from "@/lib/demo";
 import { createClient } from "@/lib/supabase/server";
 import { attachmentSchema, clientSchema, employeeSchema, expenseSchema, jobActivitySchema, jobMaterialSchema, jobSchema, paymentSchema } from "@/lib/schemas/common";
 
@@ -16,8 +15,6 @@ function emptyToNull<T extends Record<string, unknown>>(row: T) {
 }
 
 export async function createClientRecord(_: unknown, formData: FormData) {
-  if (isDemoMode()) redirect("/clients");
-
   await requireRole(["admin"]);
   const supabase = await createClient();
   const parsed = clientSchema.safeParse(Object.fromEntries(formData));
@@ -29,8 +26,6 @@ export async function createClientRecord(_: unknown, formData: FormData) {
 }
 
 export async function createEmployee(_: unknown, formData: FormData) {
-  if (isDemoMode()) redirect("/employees");
-
   await requireRole(["admin"]);
   const supabase = await createClient();
   const parsed = employeeSchema.safeParse(Object.fromEntries(formData));
@@ -42,8 +37,6 @@ export async function createEmployee(_: unknown, formData: FormData) {
 }
 
 export async function createJob(_: unknown, formData: FormData) {
-  if (isDemoMode()) redirect("/jobs");
-
   const { profile } = await requireRole(["admin"]);
   const supabase = await createClient();
   const parsed = jobSchema.safeParse(Object.fromEntries(formData));
@@ -62,8 +55,6 @@ export async function createJob(_: unknown, formData: FormData) {
 }
 
 export async function createExpense(_: unknown, formData: FormData) {
-  if (isDemoMode()) redirect("/expenses");
-
   const { profile } = await requireUser();
   const supabase = await createClient();
   const parsed = expenseSchema.safeParse(Object.fromEntries(formData));
@@ -81,8 +72,6 @@ export async function createExpense(_: unknown, formData: FormData) {
 }
 
 export async function createPayment(_: unknown, formData: FormData) {
-  if (isDemoMode()) redirect("/reports");
-
   await requireRole(["admin"]);
   const supabase = await createClient();
   const parsed = paymentSchema.safeParse(Object.fromEntries(formData));
@@ -94,12 +83,6 @@ export async function createPayment(_: unknown, formData: FormData) {
 }
 
 export async function startWorkSession(formData: FormData) {
-  if (isDemoMode()) {
-    revalidatePath("/dashboard");
-    revalidatePath("/time");
-    return;
-  }
-
   const { profile } = await requireUser();
   const supabase = await createClient();
   const jobId = value(formData, "job_id");
@@ -118,12 +101,6 @@ export async function startWorkSession(formData: FormData) {
 }
 
 export async function finishWorkSession(formData: FormData) {
-  if (isDemoMode()) {
-    revalidatePath("/dashboard");
-    revalidatePath("/time");
-    return;
-  }
-
   const { profile } = await requireUser();
   const supabase = await createClient();
   const sessionId = String(formData.get("session_id") ?? "");
@@ -139,8 +116,6 @@ export async function finishWorkSession(formData: FormData) {
 }
 
 export async function createJobActivity(_: unknown, formData: FormData) {
-  if (isDemoMode()) redirect(`/jobs/${String(formData.get("job_id") ?? "")}`);
-
   const { profile } = await requireUser();
   const supabase = await createClient();
   const parsed = jobActivitySchema.safeParse(Object.fromEntries(formData));
@@ -159,8 +134,6 @@ export async function createJobActivity(_: unknown, formData: FormData) {
 }
 
 export async function assignJobMaterial(_: unknown, formData: FormData) {
-  if (isDemoMode()) redirect(`/jobs/${String(formData.get("job_id") ?? "")}`);
-
   const { profile } = await requireUser();
   const supabase = await createClient();
   const parsed = jobMaterialSchema.safeParse(Object.fromEntries(formData));
@@ -188,8 +161,6 @@ export async function assignJobMaterial(_: unknown, formData: FormData) {
 }
 
 export async function uploadAttachment(_: unknown, formData: FormData) {
-  if (isDemoMode()) redirect(`/jobs/${String(formData.get("record_id") ?? "")}`);
-
   const { profile } = await requireUser();
   const supabase = await createClient();
   const parsed = attachmentSchema.safeParse(Object.fromEntries(formData));

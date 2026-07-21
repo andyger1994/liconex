@@ -2,16 +2,14 @@ import Link from "next/link";
 import { MapPin, MessageCircle, Phone } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { demoClients, isDemoMode } from "@/lib/demo";
 import { PageTitle } from "@/components/shell";
 import { ClientForm } from "@/components/forms";
 import { money } from "@/lib/utils";
 
 export default async function ClientsPage({ searchParams }: { searchParams: { new?: string } }) {
   await requireRole(["admin"]);
-  const demo = isDemoMode();
-  const supabase = demo ? undefined : await createClient();
-  const { data: clients } = demo ? { data: demoClients } : await supabase!
+  const supabase = await createClient();
+  const { data: clients } = await supabase
     .from("clients")
     .select("id, name, phone, whatsapp, email, address, client_type, total_billed, total_collected, pending_debt")
     .order("name");

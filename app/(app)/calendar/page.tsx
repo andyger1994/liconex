@@ -2,14 +2,12 @@ import Link from "next/link";
 import { CalendarDays, Clock3, ShieldCheck, Wrench } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { demoJobs, isDemoMode } from "@/lib/demo";
 import { PageTitle } from "@/components/shell";
 
 export default async function CalendarPage() {
   await requireUser();
-  const demo = isDemoMode();
-  const supabase = demo ? undefined : await createClient();
-  const { data: jobs } = demo ? { data: demoJobs } : await supabase!
+  const supabase = await createClient();
+  const { data: jobs } = await supabase
     .from("jobs")
     .select("id, name, status, scheduled_date, scheduled_time, due_date, warranty_until, next_maintenance, address")
     .or("scheduled_date.not.is.null,due_date.not.is.null,warranty_until.not.is.null,next_maintenance.not.is.null")

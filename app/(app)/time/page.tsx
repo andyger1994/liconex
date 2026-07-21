@@ -1,7 +1,6 @@
 import { Clock, PauseCircle, PlayCircle } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { demoJobs, demoWorkSessions, isDemoMode } from "@/lib/demo";
 import { finishWorkSession, startWorkSession } from "@/lib/actions/crud";
 import { Button } from "@/components/ui/button";
 import { Select, TextArea } from "@/components/ui/input";
@@ -10,14 +9,10 @@ import { minutesToHours, todayISO } from "@/lib/utils";
 
 export default async function TimePage() {
   const { profile } = await requireUser();
-  const demo = isDemoMode();
-  const supabase = demo ? undefined : await createClient();
-  const [{ data: sessions }, { data: jobs }] = demo ? [
-    { data: demoWorkSessions },
-    { data: demoJobs.filter((job) => ["programado", "en_camino", "en_proceso", "pausado"].includes(job.status)) }
-  ] : await Promise.all([
-    supabase!.from("work_sessions").select("id, started_at, ended_at, total_minutes, approval_status, jobs(name)").eq("user_id", profile?.id).order("started_at", { ascending: false }).limit(20),
-    supabase!.from("jobs").select("id, name").in("status", ["programado", "en_camino", "en_proceso", "pausado"]).order("scheduled_date", { ascending: true }).limit(20)
+  const supabase = await createClient();
+  const [{ data: sessions }, { data: jobs }] = await Promise.all([
+    supabase.from("work_sessions").select("id, started_at, ended_at, total_minutes, approval_status, jobs(name)").eq("user_id", profile?.id).order("started_at", { ascending: false }).limit(20),
+    supabase.from("jobs").select("id, name").in("status", ["programado", "en_camino", "en_proceso", "pausado"]).order("scheduled_date", { ascending: true }).limit(20)
   ]);
   const sessionRows = (sessions ?? []) as any[];
   const activeSession = sessionRows.find((row) => !row.ended_at);

@@ -1,20 +1,15 @@
 ﻿import { Fuel, Gauge, Route, Truck, Wrench } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { demoVehicleTrips, demoVehicles, isDemoMode } from "@/lib/demo";
 import { PageTitle, StatCard } from "@/components/shell";
 import { money } from "@/lib/utils";
 
 export default async function VehiclesPage() {
   await requireRole(["admin"]);
-  const demo = isDemoMode();
-  const supabase = demo ? undefined : await createClient();
-  const [{ data: vehicles }, { data: trips }] = demo ? [
-    { data: demoVehicles },
-    { data: demoVehicleTrips }
-  ] : await Promise.all([
-    supabase!.from("vehicles").select("id, plate, brand, model, year, fuel_type, odometer_km, estimated_consumption, insurance_due, tax_due, next_service_km, next_oil_change_km, notes").order("plate"),
-    supabase!.from("vehicle_trips").select("id, vehicle_id, trip_date, start_km, end_km, distance_km, fuel_loaded, cost, tolls, jobs(name), employees(full_name)").order("trip_date", { ascending: false }).limit(20)
+  const supabase = await createClient();
+  const [{ data: vehicles }, { data: trips }] = await Promise.all([
+    supabase.from("vehicles").select("id, plate, brand, model, year, fuel_type, odometer_km, estimated_consumption, insurance_due, tax_due, next_service_km, next_oil_change_km, notes").order("plate"),
+    supabase.from("vehicle_trips").select("id, vehicle_id, trip_date, start_km, end_km, distance_km, fuel_loaded, cost, tolls, jobs(name), employees(full_name)").order("trip_date", { ascending: false }).limit(20)
   ]);
   const vehicleRows = (vehicles ?? []) as any[];
   const tripRows = (trips ?? []) as any[];

@@ -2,7 +2,6 @@
 import { Boxes, BriefcaseBusiness, ReceiptText, Truck, Users } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { demoClients, demoExpenses, demoJobs, demoPayments, isDemoMode } from "@/lib/demo";
 import { PageTitle, StatCard } from "@/components/shell";
 import { PaymentForm } from "@/components/forms";
 import { CategoryBarChart, MoneyTrendChart } from "@/components/stats-chart";
@@ -14,18 +13,12 @@ function monthName(value: string) {
 
 export default async function ReportsPage({ searchParams }: { searchParams: { payment?: string } }) {
   await requireRole(["admin"]);
-  const demo = isDemoMode();
-  const supabase = demo ? undefined : await createClient();
-  const [{ data: payments }, { data: expenses }, { data: jobs }, { data: clients }] = demo ? [
-    { data: demoPayments },
-    { data: demoExpenses },
-    { data: demoJobs },
-    { data: demoClients }
-  ] : await Promise.all([
-    supabase!.from("payments").select("id, amount, currency, paid_at, status").order("paid_at", { ascending: false }).limit(300),
-    supabase!.from("expenses").select("id, amount, currency, spent_at, expense_categories(name)").order("spent_at", { ascending: false }).limit(300),
-    supabase!.from("jobs").select("id, name, status, agreed_price, estimated_cost, real_cost").order("created_at", { ascending: false }).limit(80),
-    supabase!.from("clients").select("id, name").order("name")
+  const supabase = await createClient();
+  const [{ data: payments }, { data: expenses }, { data: jobs }, { data: clients }] = await Promise.all([
+    supabase.from("payments").select("id, amount, currency, paid_at, status").order("paid_at", { ascending: false }).limit(300),
+    supabase.from("expenses").select("id, amount, currency, spent_at, expense_categories(name)").order("spent_at", { ascending: false }).limit(300),
+    supabase.from("jobs").select("id, name, status, agreed_price, estimated_cost, real_cost").order("created_at", { ascending: false }).limit(80),
+    supabase.from("clients").select("id, name").order("name")
   ]);
 
   const paymentRows = (payments ?? []) as any[];

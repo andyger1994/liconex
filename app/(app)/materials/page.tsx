@@ -1,20 +1,15 @@
 ﻿import { AlertTriangle, ArrowDownUp, Boxes, PackageCheck } from "lucide-react";
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { demoInventoryMovements, demoMaterials, isDemoMode } from "@/lib/demo";
 import { PageTitle, StatCard } from "@/components/shell";
 import { money } from "@/lib/utils";
 
 export default async function MaterialsPage() {
   await requireRole(["admin"]);
-  const demo = isDemoMode();
-  const supabase = demo ? undefined : await createClient();
-  const [{ data: materials }, { data: movements }] = demo ? [
-    { data: demoMaterials },
-    { data: demoInventoryMovements }
-  ] : await Promise.all([
-    supabase!.from("materials").select("id, name, category, brand, model, code, purchase_price, sale_price, unit, current_stock, minimum_stock, location, warranty_until").order("name"),
-    supabase!.from("inventory_movements").select("id, material_id, movement_type, quantity, unit_cost, created_at, materials(name), jobs(name)").order("created_at", { ascending: false }).limit(20)
+  const supabase = await createClient();
+  const [{ data: materials }, { data: movements }] = await Promise.all([
+    supabase.from("materials").select("id, name, category, brand, model, code, purchase_price, sale_price, unit, current_stock, minimum_stock, location, warranty_until").order("name"),
+    supabase.from("inventory_movements").select("id, material_id, movement_type, quantity, unit_cost, created_at, materials(name), jobs(name)").order("created_at", { ascending: false }).limit(20)
   ]);
   const materialRows = (materials ?? []) as any[];
   const movementRows = (movements ?? []) as any[];

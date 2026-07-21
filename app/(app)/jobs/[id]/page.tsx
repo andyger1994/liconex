@@ -3,19 +3,15 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Camera, CheckCircle2, ClipboardPenLine, FileSignature, MapPin, Package, Timer, TrendingUp, TriangleAlert } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { demoExpenses, demoInventoryMovements, demoJobActivities, demoJobs, demoMaterials, isDemoMode } from "@/lib/demo";
 import { AttachmentForm, JobActivityForm, JobMaterialForm } from "@/components/forms";
 import { PageTitle, StatCard } from "@/components/shell";
 import { minutesToHours, money } from "@/lib/utils";
 
 export default async function JobDetailPage({ params, searchParams }: { params: { id: string }; searchParams: { panel?: string } }) {
   await requireUser();
-  const demo = isDemoMode();
-  const supabase = demo ? undefined : await createClient();
+  const supabase = await createClient();
 
-  const job = demo
-    ? demoJobs.find((row) => row.id === params.id)
-    : ((await supabase!
+  const job = ((await supabase
         .from("jobs")
         .select("id, code, name, status, priority, address, service_type, description, scheduled_date, scheduled_time, due_date, warranty_until, next_maintenance, agreed_price, advance_amount, estimated_cost, real_cost, estimated_minutes, real_minutes, internal_notes, client_notes, clients(name, phone, whatsapp)")
         .eq("id", params.id)
@@ -23,29 +19,14 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
 
   if (!job) notFound();
 
-  const [{ data: activities }, { data: expenses }, { data: jobMaterials }, { data: history }, { data: materials }, { data: attachments }] = demo
-    ? [
-        { data: demoJobActivities.filter((row) => row.job_id === params.id) },
-        { data: demoExpenses.filter((row) => row.jobs?.name === job.name) },
-        { data: demoInventoryMovements.filter((row) => row.job === job.name) },
-        { data: [
-          { id: `${job.id}-new`, old_status: null, new_status: "nuevo", created_at: "2026-07-18T09:00:00" },
-          { id: `${job.id}-status`, old_status: "programado", new_status: job.status, created_at: "2026-07-20T08:40:00" }
-        ] },
-        { data: demoMaterials },
-        { data: [
-          { id: `${job.id}-before`, file_name: "foto-antes-demo.webp", bucket: "job-photos", path: "demo/foto-antes.webp", created_at: "2026-07-20T08:45:00" },
-          { id: `${job.id}-receipt`, file_name: "conformidad-cliente-demo.pdf", bucket: "attachments", path: "demo/conformidad.pdf", created_at: "2026-07-20T12:20:00" }
-        ] }
-      ]
-    : await Promise.all([
-        supabase!.from("job_activities").select("id, activity_at, description, minutes_used, status, materials_used, problems, solution, pending_tasks, profiles(full_name)").eq("job_id", params.id).order("activity_at", { ascending: false }),
-        supabase!.from("expenses").select("id, description, amount, currency, spent_at, expense_categories(name)").eq("job_id", params.id).order("spent_at", { ascending: false }),
-        supabase!.from("job_materials").select("id, quantity, unit_cost, materials(name, unit)").eq("job_id", params.id),
-        supabase!.from("job_status_history").select("id, old_status, new_status, created_at").eq("job_id", params.id).order("created_at", { ascending: false }),
-        supabase!.from("materials").select("id, name, purchase_price, unit").order("name"),
-        supabase!.from("attachments").select("id, bucket, path, file_name, mime_type, size_bytes, created_at").eq("module", "jobs").eq("record_id", params.id).order("created_at", { ascending: false })
-      ]);
+  const [{ data: activities }, { data: expenses }, { data: jobMaterials }, { data: history }, { data: materials }, { data: attachments }] = await Promise.all([
+    supabase.from("job_activities").select("id, activity_at, description, minutes_used, status, materials_used, problems, solution, pending_tasks, profiles(full_name)").eq("job_id", params.id).order("activity_at", { ascending: false }),
+    supabase.from("expenses").select("id, description, amount, currency, spent_at, expense_categories(name)").eq("job_id", params.id).order("spent_at", { ascending: false }),
+    supabase.from("job_materials").select("id, quantity, unit_cost, materials(name, unit)").eq("job_id", params.id),
+    supabase.from("job_status_history").select("id, old_status, new_status, created_at").eq("job_id", params.id).order("created_at", { ascending: false }),
+    supabase.from("materials").select("id, name, purchase_price, unit").order("name"),
+    supabase.from("attachments").select("id, bucket, path, file_name, mime_type, size_bytes, created_at").eq("module", "jobs").eq("record_id", params.id).order("created_at", { ascending: false })
+  ]);
 
   const activityRows = (activities ?? []) as any[];
   const expenseRows = (expenses ?? []) as any[];
@@ -148,7 +129,7 @@ export default async function JobDetailPage({ params, searchParams }: { params: 
           <h3 className="mb-3 font-bold">Materiales del trabajo</h3>
           <div className="grid gap-2">
             {materialRows.map((row) => {
-              const name = row.material ?? row.materials?.name ?? demoMaterials.find((mat) => mat.id === row.material_id)?.name ?? "Material";
+              const name = row.material ?? row.materials?.name ?? "Material";
               return (
                 <p key={row.id} className="flex justify-between rounded-2xl bg-white/8 p-3 text-sm">
                   <span>{name}</span>
