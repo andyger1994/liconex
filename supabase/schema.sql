@@ -1,7 +1,14 @@
 create extension if not exists "pgcrypto";
 
-create type public.app_role as enum ('admin', 'technician');
-create type public.approval_status as enum ('pending', 'approved', 'rejected');
+do $$
+begin
+  if not exists (select 1 from pg_type where typname = 'app_role' and typnamespace = 'public'::regnamespace) then
+    create type public.app_role as enum ('admin', 'technician');
+  end if;
+  if not exists (select 1 from pg_type where typname = 'approval_status' and typnamespace = 'public'::regnamespace) then
+    create type public.approval_status as enum ('pending', 'approved', 'rejected');
+  end if;
+end $$;
 
 create or replace function public.set_updated_at()
 returns trigger language plpgsql as $$
@@ -9,16 +16,6 @@ begin
   new.updated_at = now();
   return new;
 end;
-$$;
-
-create or replace function public.current_role()
-returns public.app_role language sql stable security definer set search_path = public as $$
-  select coalesce((select role from public.profiles where id = auth.uid()), 'technician'::public.app_role);
-$$;
-
-create or replace function public.is_admin()
-returns boolean language sql stable security definer set search_path = public as $$
-  select public.current_role() = 'admin'::public.app_role;
 $$;
 
 create table public.profiles (
@@ -30,6 +27,16 @@ create table public.profiles (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+create or replace function public.current_role()
+returns public.app_role language sql stable security definer set search_path = public as $$
+  select coalesce((select role from public.profiles where id = auth.uid()), 'technician'::public.app_role);
+$$;
+
+create or replace function public.is_admin()
+returns boolean language sql stable security definer set search_path = public as $$
+  select public.current_role() = 'admin'::public.app_role;
+$$;
 
 create table public.company_settings (
   id uuid primary key default gen_random_uuid(),
