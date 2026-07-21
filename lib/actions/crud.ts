@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole, requireUser } from "@/lib/auth";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, createServiceClient } from "@/lib/supabase/server";
 import { attachmentSchema, clientSchema, employeeSchema, expenseSchema, jobActivitySchema, jobMaterialSchema, jobSchema, materialSchema, paymentSchema, vehicleSchema, vehicleTripSchema } from "@/lib/schemas/common";
 
 function value(formData: FormData, key: string) {
@@ -14,9 +14,13 @@ function emptyToNull<T extends Record<string, unknown>>(row: T) {
   return Object.fromEntries(Object.entries(row).map(([key, val]) => [key, val === "" || val === undefined ? null : val]));
 }
 
+async function createWriteClient() {
+  return createServiceClient() ?? (await createClient());
+}
+
 export async function createClientRecord(_: unknown, formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = await createWriteClient();
   const parsed = clientSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos invalidos" };
   const { error } = await supabase.from("clients").insert(emptyToNull(parsed.data));
@@ -27,7 +31,7 @@ export async function createClientRecord(_: unknown, formData: FormData) {
 
 export async function createEmployee(_: unknown, formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = await createWriteClient();
   const parsed = employeeSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos invalidos" };
   const { error } = await supabase.from("employees").insert(emptyToNull(parsed.data));
@@ -38,7 +42,7 @@ export async function createEmployee(_: unknown, formData: FormData) {
 
 export async function createJob(_: unknown, formData: FormData) {
   const { profile } = await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = await createWriteClient();
   const parsed = jobSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos invalidos" };
   const payload = emptyToNull({
@@ -56,7 +60,7 @@ export async function createJob(_: unknown, formData: FormData) {
 
 export async function createExpense(_: unknown, formData: FormData) {
   const { profile } = await requireUser();
-  const supabase = await createClient();
+  const supabase = await createWriteClient();
   const parsed = expenseSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos invalidos" };
   const { error } = await supabase.from("expenses").insert(
@@ -73,7 +77,7 @@ export async function createExpense(_: unknown, formData: FormData) {
 
 export async function createPayment(_: unknown, formData: FormData) {
   await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = await createWriteClient();
   const parsed = paymentSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos invalidos" };
   const { error } = await supabase.from("payments").insert(emptyToNull(parsed.data));
@@ -84,7 +88,7 @@ export async function createPayment(_: unknown, formData: FormData) {
 
 export async function startWorkSession(formData: FormData) {
   const { profile } = await requireUser();
-  const supabase = await createClient();
+  const supabase = await createWriteClient();
   const jobId = value(formData, "job_id");
   const { error } = await supabase.from("work_sessions").insert(
     emptyToNull({
@@ -102,7 +106,7 @@ export async function startWorkSession(formData: FormData) {
 
 export async function finishWorkSession(formData: FormData) {
   const { profile } = await requireUser();
-  const supabase = await createClient();
+  const supabase = await createWriteClient();
   const sessionId = String(formData.get("session_id") ?? "");
   const { error } = await supabase
     .from("work_sessions")
@@ -117,7 +121,7 @@ export async function finishWorkSession(formData: FormData) {
 
 export async function createJobActivity(_: unknown, formData: FormData) {
   const { profile } = await requireUser();
-  const supabase = await createClient();
+  const supabase = await createWriteClient();
   const parsed = jobActivitySchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos invalidos" };
 
@@ -135,7 +139,7 @@ export async function createJobActivity(_: unknown, formData: FormData) {
 
 export async function assignJobMaterial(_: unknown, formData: FormData) {
   const { profile } = await requireUser();
-  const supabase = await createClient();
+  const supabase = await createWriteClient();
   const parsed = jobMaterialSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos invalidos" };
 
@@ -162,7 +166,7 @@ export async function assignJobMaterial(_: unknown, formData: FormData) {
 
 export async function createMaterial(_: unknown, formData: FormData) {
   const { profile } = await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = await createWriteClient();
   const parsed = materialSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos invalidos" };
 
@@ -179,7 +183,7 @@ export async function createMaterial(_: unknown, formData: FormData) {
 
 export async function createVehicle(_: unknown, formData: FormData) {
   const { profile } = await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = await createWriteClient();
   const parsed = vehicleSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos invalidos" };
 
@@ -196,7 +200,7 @@ export async function createVehicle(_: unknown, formData: FormData) {
 
 export async function createVehicleTrip(_: unknown, formData: FormData) {
   const { profile } = await requireRole(["admin"]);
-  const supabase = await createClient();
+  const supabase = await createWriteClient();
   const parsed = vehicleTripSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos invalidos" };
 
@@ -218,7 +222,7 @@ export async function createVehicleTrip(_: unknown, formData: FormData) {
 
 export async function uploadAttachment(_: unknown, formData: FormData) {
   const { profile } = await requireUser();
-  const supabase = await createClient();
+  const supabase = await createWriteClient();
   const parsed = attachmentSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos invalidos" };
 

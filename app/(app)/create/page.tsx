@@ -1,11 +1,12 @@
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
-import { Banknote, Boxes, BriefcaseBusiness, CalendarDays, Clock3, ReceiptText, Truck, UserPlus, Users } from "lucide-react";
+import { Banknote, Boxes, CalendarDays, Clock3, ReceiptText, Truck, UserPlus, Users } from "lucide-react";
 import { requireUser } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { PageTitle } from "@/components/shell";
+import { JobForm } from "@/components/forms";
 
 const actions: { href: string; title: string; subtitle: string; icon: LucideIcon; adminOnly?: boolean }[] = [
-  { href: "/jobs?new=1", title: "Trabajo", subtitle: "Alta de servicio, precio, cliente, agenda y costos.", icon: BriefcaseBusiness, adminOnly: true },
   { href: "/expenses?new=1", title: "Gasto", subtitle: "Compra, combustible, herramienta o comprobante.", icon: ReceiptText },
   { href: "/clients?new=1", title: "Cliente", subtitle: "Contacto, direccion, RUT y observaciones.", icon: UserPlus, adminOnly: true },
   { href: "/reports?payment=1", title: "Cobro", subtitle: "Ingreso por cliente o trabajo.", icon: Banknote, adminOnly: true },
@@ -19,15 +20,24 @@ const actions: { href: string; title: string; subtitle: string; icon: LucideIcon
 export default async function CreatePage() {
   const { profile } = await requireUser();
   const isAdmin = profile?.role === "admin";
+  const supabase = await createClient();
+  const { data: clients } = isAdmin ? await supabase.from("clients").select("id, name").order("name") : { data: [] };
 
   return (
     <div>
-      <PageTitle title="Crear" subtitle="Altas rapidas y registros operativos." />
+      <PageTitle title="Nuevo trabajo" subtitle="Carga directa desde el boton central." />
       {!isAdmin ? (
         <section className="glass mb-5 rounded-3xl border border-copper/30 p-4 text-sm text-white/72">
-          Tu usuario esta como tecnico. Podés registrar gastos y jornada, pero trabajos, clientes, cobros, inventario, vehiculos y equipo requieren rol admin.
+          Tu usuario esta como tecnico. Podes registrar gastos y jornada, pero trabajos, clientes, cobros, inventario, vehiculos y equipo requieren rol admin.
         </section>
-      ) : null}
+      ) : (
+        <section className="glass mb-5 rounded-3xl p-5">
+          <h3 className="mb-4 text-lg font-bold">Crear trabajo</h3>
+          <JobForm clients={clients ?? []} />
+        </section>
+      )}
+
+      <h3 className="mb-3 text-sm font-semibold text-white/72">Otros registros</h3>
       <section className="grid gap-3">
         {actions.map((action) => {
           const Icon = action.icon;

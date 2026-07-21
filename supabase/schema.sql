@@ -443,7 +443,7 @@ $$;
 create trigger work_sessions_calculate before insert or update on public.work_sessions for each row execute function public.calculate_work_session();
 
 create or replace function public.capture_job_status_change()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql security definer set search_path = public as $$
 begin
   if tg_op = 'INSERT' or old.status is distinct from new.status then
     insert into public.job_status_history (job_id, old_status, new_status, changed_by)
@@ -585,6 +585,7 @@ create policy "vehicle trips admin read" on public.vehicle_trips for select usin
 create policy "suppliers admin all" on public.suppliers for all using (public.is_admin()) with check (public.is_admin());
 create policy "attachments own or admin" on public.attachments for all using (uploaded_by = auth.uid() or public.is_admin()) with check (uploaded_by = auth.uid() or public.is_admin());
 create policy "status history visible" on public.job_status_history for select using (auth.uid() is not null);
+create policy "status history insert from job trigger" on public.job_status_history for insert with check (auth.uid() is not null);
 create policy "notifications own" on public.notifications for all using (user_id = auth.uid() or public.is_admin()) with check (user_id = auth.uid() or public.is_admin());
 create policy "monthly summaries admin" on public.monthly_summaries for all using (public.is_admin()) with check (public.is_admin());
 create policy "audit admin read" on public.audit_logs for select using (public.is_admin());
