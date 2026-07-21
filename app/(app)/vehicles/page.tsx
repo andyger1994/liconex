@@ -2,14 +2,17 @@
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PageTitle, StatCard } from "@/components/shell";
+import { VehicleForm, VehicleTripForm } from "@/components/forms";
 import { money } from "@/lib/utils";
 
-export default async function VehiclesPage() {
+export default async function VehiclesPage({ searchParams }: { searchParams: { new?: string; trip?: string } }) {
   await requireRole(["admin"]);
   const supabase = await createClient();
-  const [{ data: vehicles }, { data: trips }] = await Promise.all([
+  const [{ data: vehicles }, { data: trips }, { data: jobs }, { data: employees }] = await Promise.all([
     supabase.from("vehicles").select("id, plate, brand, model, year, fuel_type, odometer_km, estimated_consumption, insurance_due, tax_due, next_service_km, next_oil_change_km, notes").order("plate"),
-    supabase.from("vehicle_trips").select("id, vehicle_id, trip_date, start_km, end_km, distance_km, fuel_loaded, cost, tolls, jobs(name), employees(full_name)").order("trip_date", { ascending: false }).limit(20)
+    supabase.from("vehicle_trips").select("id, vehicle_id, trip_date, start_km, end_km, distance_km, fuel_loaded, cost, tolls, jobs(name), employees(full_name)").order("trip_date", { ascending: false }).limit(20),
+    supabase.from("jobs").select("id, name").order("created_at", { ascending: false }).limit(40),
+    supabase.from("employees").select("id, full_name").eq("is_active", true).order("full_name")
   ]);
   const vehicleRows = (vehicles ?? []) as any[];
   const tripRows = (trips ?? []) as any[];
@@ -19,6 +22,18 @@ export default async function VehiclesPage() {
   return (
     <div>
       <PageTitle title="Vehiculos" subtitle="Kilometraje, combustible, services y costo de traslados." />
+      {searchParams.new ? (
+        <section className="glass mb-5 rounded-3xl p-5">
+          <h3 className="mb-4 text-lg font-bold">Agregar vehiculo</h3>
+          <VehicleForm />
+        </section>
+      ) : null}
+      {searchParams.trip ? (
+        <section className="glass mb-5 rounded-3xl p-5">
+          <h3 className="mb-4 text-lg font-bold">Registrar traslado</h3>
+          <VehicleTripForm vehicles={vehicles ?? []} jobs={jobs ?? []} employees={employees ?? []} />
+        </section>
+      ) : null}
       <div className="mb-5 grid grid-cols-2 gap-3">
         <StatCard label="Vehiculos" value={vehicleRows.length} />
         <StatCard label="Km registrados" value={kms} tone="white" />

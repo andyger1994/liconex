@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireRole, requireUser } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
-import { attachmentSchema, clientSchema, employeeSchema, expenseSchema, jobActivitySchema, jobMaterialSchema, jobSchema, paymentSchema } from "@/lib/schemas/common";
+import { attachmentSchema, clientSchema, employeeSchema, expenseSchema, jobActivitySchema, jobMaterialSchema, jobSchema, materialSchema, paymentSchema, vehicleSchema, vehicleTripSchema } from "@/lib/schemas/common";
 
 function value(formData: FormData, key: string) {
   return formData.get(key) ? String(formData.get(key)) : undefined;
@@ -158,6 +158,62 @@ export async function assignJobMaterial(_: unknown, formData: FormData) {
   revalidatePath(`/jobs/${parsed.data.job_id}`);
   revalidatePath("/materials");
   redirect(`/jobs/${parsed.data.job_id}`);
+}
+
+export async function createMaterial(_: unknown, formData: FormData) {
+  const { profile } = await requireRole(["admin"]);
+  const supabase = await createClient();
+  const parsed = materialSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos invalidos" };
+
+  const { error } = await supabase.from("materials").insert(
+    emptyToNull({
+      ...parsed.data,
+      created_by: profile?.id
+    })
+  );
+  if (error) return { error: error.message };
+  revalidatePath("/materials");
+  redirect("/materials");
+}
+
+export async function createVehicle(_: unknown, formData: FormData) {
+  const { profile } = await requireRole(["admin"]);
+  const supabase = await createClient();
+  const parsed = vehicleSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos invalidos" };
+
+  const { error } = await supabase.from("vehicles").insert(
+    emptyToNull({
+      ...parsed.data,
+      created_by: profile?.id
+    })
+  );
+  if (error) return { error: error.message };
+  revalidatePath("/vehicles");
+  redirect("/vehicles");
+}
+
+export async function createVehicleTrip(_: unknown, formData: FormData) {
+  const { profile } = await requireRole(["admin"]);
+  const supabase = await createClient();
+  const parsed = vehicleTripSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Datos invalidos" };
+
+  if (Number(parsed.data.end_km) < Number(parsed.data.start_km)) return { error: "El kilometraje final no puede ser menor al inicial" };
+
+  const { error } = await supabase.from("vehicle_trips").insert(
+    emptyToNull({
+      ...parsed.data,
+      created_by: profile?.id
+    })
+  );
+  if (error) return { error: error.message };
+
+  await supabase.from("vehicles").update({ odometer_km: parsed.data.end_km }).eq("id", parsed.data.vehicle_id).lt("odometer_km", parsed.data.end_km);
+
+  revalidatePath("/vehicles");
+  redirect("/vehicles");
 }
 
 export async function uploadAttachment(_: unknown, formData: FormData) {

@@ -26,6 +26,11 @@ export default async function JobsPage({ searchParams }: { searchParams: { new?:
           <JobForm clients={clients ?? []} />
         </section>
       ) : null}
+      {searchParams.new && !canCreate ? (
+        <section className="glass mb-5 rounded-3xl border border-copper/30 p-5 text-sm text-white/72">
+          Para crear trabajos tu usuario necesita rol admin en la tabla profiles de Supabase.
+        </section>
+      ) : null}
       <div className="grid gap-3">
         {jobRows.map((job) => {
           const margin = Number(job.agreed_price ?? 0) - Number(job.real_cost ?? job.estimated_cost ?? 0);

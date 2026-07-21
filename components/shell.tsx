@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { BriefcaseBusiness, CalendarDays, CirclePlus, Home, MoreHorizontal, ReceiptText } from "lucide-react";
+import { BriefcaseBusiness, CalendarDays, CirclePlus, Home, MoreHorizontal } from "lucide-react";
 import { signOut } from "@/lib/actions/auth";
 import type { Profile } from "@/lib/types";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 const nav = [
   { href: "/dashboard", label: "Inicio", icon: Home },
   { href: "/jobs", label: "Trabajos", icon: BriefcaseBusiness },
-  { href: "/jobs?new=1", label: "Crear", icon: CirclePlus, raised: true },
+  { href: "/create", label: "Crear", icon: CirclePlus, raised: true },
   { href: "/calendar", label: "Agenda", icon: CalendarDays },
   { href: "/reports", label: "Mas", icon: MoreHorizontal }
 ];

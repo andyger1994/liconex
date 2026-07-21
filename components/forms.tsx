@@ -6,12 +6,14 @@ import { useForm } from "react-hook-form";
 import type { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Field, Select, TextArea } from "@/components/ui/input";
-import { clientSchema, employeeSchema, expenseSchema, jobActivitySchema, jobMaterialSchema, jobSchema, paymentSchema } from "@/lib/schemas/common";
-import { assignJobMaterial, createClientRecord, createEmployee, createExpense, createJob, createJobActivity, createPayment, uploadAttachment } from "@/lib/actions/crud";
+import { clientSchema, employeeSchema, expenseSchema, jobActivitySchema, jobMaterialSchema, jobSchema, materialSchema, paymentSchema, vehicleSchema, vehicleTripSchema } from "@/lib/schemas/common";
+import { assignJobMaterial, createClientRecord, createEmployee, createExpense, createJob, createJobActivity, createMaterial, createPayment, createVehicle, createVehicleTrip, uploadAttachment } from "@/lib/actions/crud";
 
 type Option = { id: string; name: string };
 type Category = { id: string; name: string };
 type Material = { id: string; name: string; purchase_price?: number; unit?: string };
+type Employee = { id: string; full_name: string };
+type Vehicle = { id: string; plate: string; brand?: string | null; model?: string | null; odometer_km?: number | null };
 
 function ErrorLine({ state }: { state: { error?: string } | null }) {
   return state?.error ? <p className="rounded-2xl bg-danger/15 p-3 text-sm text-danger">{state.error}</p> : null;
@@ -208,6 +210,107 @@ export function JobMaterialForm({ jobId, materials }: { jobId: string; materials
       </div>
       <ErrorLine state={state} />
       <SubmitButton label="Imputar material" pendingLabel="Guardando..." />
+    </form>
+  );
+}
+
+export function MaterialForm() {
+  const [state, action] = useFormState(createMaterial, null);
+  useForm<z.infer<typeof materialSchema>>({ resolver: zodResolver(materialSchema) });
+  return (
+    <form action={action} className="grid gap-4">
+      <Field label="Nombre del material" name="name" required />
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Categoria" name="category" />
+        <Field label="Codigo/SKU" name="code" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Marca" name="brand" />
+        <Field label="Modelo" name="model" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Costo compra" name="purchase_price" type="number" min="0" step="0.01" />
+        <Field label="Precio venta" name="sale_price" type="number" min="0" step="0.01" />
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <Field label="Unidad" name="unit" defaultValue="unidad" />
+        <Field label="Stock" name="current_stock" type="number" min="0" step="0.01" />
+        <Field label="Minimo" name="minimum_stock" type="number" min="0" step="0.01" />
+      </div>
+      <Field label="Ubicacion" name="location" />
+      <Field label="Garantia hasta" name="warranty_until" type="date" />
+      <TextArea label="Notas" name="notes" />
+      <ErrorLine state={state} />
+      <SubmitButton label="Agregar material" pendingLabel="Guardando..." />
+    </form>
+  );
+}
+
+export function VehicleForm() {
+  const [state, action] = useFormState(createVehicle, null);
+  useForm<z.infer<typeof vehicleSchema>>({ resolver: zodResolver(vehicleSchema) });
+  return (
+    <form action={action} className="grid gap-4">
+      <Field label="Matricula" name="plate" required />
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Marca" name="brand" />
+        <Field label="Modelo" name="model" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Ano" name="year" type="number" min="1950" max="2100" />
+        <Select label="Combustible" name="fuel_type" defaultValue="nafta">
+          {["nafta", "gasoil", "electrico", "hibrido", "otro"].map((name) => <option key={name}>{name}</option>)}
+        </Select>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Km actual" name="odometer_km" type="number" min="0" step="1" />
+        <Field label="Consumo L/100" name="estimated_consumption" type="number" min="0" step="0.1" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Seguro vence" name="insurance_due" type="date" />
+        <Field label="Patente vence" name="tax_due" type="date" />
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Proximo service km" name="next_service_km" type="number" min="0" step="1" />
+        <Field label="Cambio aceite km" name="next_oil_change_km" type="number" min="0" step="1" />
+      </div>
+      <TextArea label="Notas" name="notes" />
+      <ErrorLine state={state} />
+      <SubmitButton label="Agregar vehiculo" pendingLabel="Guardando..." />
+    </form>
+  );
+}
+
+export function VehicleTripForm({ vehicles, jobs, employees }: { vehicles: Vehicle[]; jobs: Option[]; employees: Employee[] }) {
+  const [state, action] = useFormState(createVehicleTrip, null);
+  useForm<z.infer<typeof vehicleTripSchema>>({ resolver: zodResolver(vehicleTripSchema) });
+  const today = new Date().toISOString().slice(0, 10);
+  return (
+    <form action={action} className="grid gap-4">
+      <Select label="Vehiculo" name="vehicle_id" required>
+        {vehicles.map((vehicle) => <option key={vehicle.id} value={vehicle.id}>{vehicle.plate} {vehicle.brand ?? ""} {vehicle.model ?? ""}</option>)}
+      </Select>
+      <Select label="Trabajo" name="job_id">
+        <option value="">Sin trabajo</option>
+        {jobs.map((job) => <option key={job.id} value={job.id}>{job.name}</option>)}
+      </Select>
+      <Select label="Conductor" name="driver_id">
+        <option value="">Sin conductor</option>
+        {employees.map((employee) => <option key={employee.id} value={employee.id}>{employee.full_name}</option>)}
+      </Select>
+      <Field label="Fecha" name="trip_date" type="date" defaultValue={today} required />
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Km inicial" name="start_km" type="number" min="0" step="1" required />
+        <Field label="Km final" name="end_km" type="number" min="0" step="1" required />
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        <Field label="Litros" name="fuel_loaded" type="number" min="0" step="0.01" />
+        <Field label="Combustible" name="cost" type="number" min="0" step="0.01" />
+        <Field label="Peajes" name="tolls" type="number" min="0" step="0.01" />
+      </div>
+      <TextArea label="Notas" name="notes" />
+      <ErrorLine state={state} />
+      <SubmitButton label="Registrar traslado" pendingLabel="Guardando..." />
     </form>
   );
 }

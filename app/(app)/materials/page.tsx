@@ -2,9 +2,10 @@
 import { requireRole } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PageTitle, StatCard } from "@/components/shell";
+import { MaterialForm } from "@/components/forms";
 import { money } from "@/lib/utils";
 
-export default async function MaterialsPage() {
+export default async function MaterialsPage({ searchParams }: { searchParams: { new?: string } }) {
   await requireRole(["admin"]);
   const supabase = await createClient();
   const [{ data: materials }, { data: movements }] = await Promise.all([
@@ -19,6 +20,12 @@ export default async function MaterialsPage() {
   return (
     <div>
       <PageTitle title="Inventario" subtitle="Stock, costos, movimientos y alertas de materiales." />
+      {searchParams.new ? (
+        <section className="glass mb-5 rounded-3xl p-5">
+          <h3 className="mb-4 text-lg font-bold">Agregar material</h3>
+          <MaterialForm />
+        </section>
+      ) : null}
       <div className="mb-5 grid grid-cols-2 gap-3">
         <StatCard label="Materiales" value={materialRows.length} />
         <StatCard label="Stock bajo" value={lowStock} tone="copper" />

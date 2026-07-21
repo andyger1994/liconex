@@ -85,6 +85,50 @@ export const jobMaterialSchema = z.object({
   unit_cost: z.coerce.number().min(0).default(0)
 });
 
+export const materialSchema = z.object({
+  name: z.string().min(2, "Escribe el nombre del material"),
+  category: z.string().optional(),
+  brand: z.string().optional(),
+  model: z.string().optional(),
+  code: z.string().optional(),
+  purchase_price: optionalMoney,
+  sale_price: optionalMoney,
+  unit: z.string().min(1).default("unidad"),
+  current_stock: z.coerce.number().min(0).default(0),
+  minimum_stock: z.coerce.number().min(0).default(0),
+  location: z.string().optional(),
+  warranty_until: z.string().optional(),
+  notes: z.string().optional()
+});
+
+export const vehicleSchema = z.object({
+  plate: z.string().min(3, "Escribe la matricula"),
+  brand: z.string().optional(),
+  model: z.string().optional(),
+  year: z.coerce.number().int().min(1950).max(2100).optional().or(z.literal("")),
+  fuel_type: z.string().optional(),
+  odometer_km: z.coerce.number().min(0).default(0),
+  estimated_consumption: z.coerce.number().min(0).optional().or(z.literal("")),
+  insurance_due: z.string().optional(),
+  tax_due: z.string().optional(),
+  next_service_km: z.coerce.number().min(0).optional().or(z.literal("")),
+  next_oil_change_km: z.coerce.number().min(0).optional().or(z.literal("")),
+  notes: z.string().optional()
+});
+
+export const vehicleTripSchema = z.object({
+  vehicle_id: uuid,
+  job_id: z.string().uuid().optional().or(z.literal("")),
+  driver_id: z.string().uuid().optional().or(z.literal("")),
+  trip_date: z.string().min(10),
+  start_km: z.coerce.number().min(0),
+  end_km: z.coerce.number().min(0),
+  fuel_loaded: z.coerce.number().min(0).default(0),
+  cost: optionalMoney,
+  tolls: optionalMoney,
+  notes: z.string().optional()
+});
+
 export const attachmentSchema = z.object({
   module: z.string().min(2),
   record_id: uuid,
